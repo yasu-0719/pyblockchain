@@ -24,6 +24,7 @@ BLOCKCHAIN_NEIGHBOURS_SYNC_TIME_SEC = 20
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
+
 class BlockChain(object):
 
     def __init__(self, blockchain_address=None, port=None):
@@ -39,7 +40,7 @@ class BlockChain(object):
     def run(self):
         self.sync_neighbours()
         self.resolve_conflicts()
-        # self.start_mining()
+        self.start_mining()
 
     def set_neighbours(self):
         self.neighbours = utils.find_neighbours(
@@ -58,19 +59,19 @@ class BlockChain(object):
                     BLOCKCHAIN_NEIGHBOURS_SYNC_TIME_SEC, self.sync_neighbours)
                 loop.start()
 
-
     def create_block(self, nonce, previous_hash):
         block = utils.sorted_dict_by_key({
             'timestamp': time.time(),
             'transactions': self.transaction_pool,
             'nonce': nonce,
-            'previous_hash': previous_hash 
+            'previous_hash': previous_hash
         })
         self.chain.append(block)
         self.transaction_pool = []
 
         for node in self.neighbours:
             requests.delete(f'http://{node}/transactions')
+
         return block
 
     def hash(self, block):
@@ -91,7 +92,7 @@ class BlockChain(object):
             return True
 
         if self.verify_transaction_signature(
-            sender_public_key, signature, transaction):
+                sender_public_key, signature, transaction):
 
             # if self.calculate_total_amount(sender_blockchain_address) < float(value):
             #     logger.error({'action': 'add_transaction', 'error': 'no_value'})
@@ -102,13 +103,12 @@ class BlockChain(object):
         return False
 
     def create_transaction(self, sender_blockchain_address,
-                          recipient_blockchain_address, value,
-                          sender_public_key, signature):
-        
+                        recipient_blockchain_address, value,
+                        sender_public_key, signature):
+
         is_transacted = self.add_transaction(
             sender_blockchain_address, recipient_blockchain_address,
-            value, sender_public_key, signature
-        )
+            value, sender_public_key, signature)
 
         if is_transacted:
             for node in self.neighbours:
@@ -122,7 +122,6 @@ class BlockChain(object):
                         'signature': signature,
                     }
                 )
-
         return is_transacted
 
     def verify_transaction_signature(
@@ -135,7 +134,6 @@ class BlockChain(object):
             bytes().fromhex(sender_public_key), curve=NIST256p)
         verified_key = verifying_key.verify(signature_bytes, message)
         return verified_key
-
 
     def valid_proof(self, transactions, previous_hash, nonce,
                     difficulty=MINING_DIFFICULTY):
@@ -158,11 +156,11 @@ class BlockChain(object):
     def mining(self):
         if not self.transaction_pool:
             return False
+
         self.add_transaction(
             sender_blockchain_address=MINING_SENDER,
             recipient_blockchain_address=self.blockchain_address,
-            value=MINING_REWARD
-        )
+            value=MINING_REWARD)
         nonce = self.proof_of_work()
         previous_hash = self.hash(self.chain[-1])
         self.create_block(nonce, previous_hash)
@@ -181,8 +179,6 @@ class BlockChain(object):
                 self.mining()
                 loop = threading.Timer(MINING_TIMER_SEC, self.start_mining)
                 loop.start()
-                
-
 
     def calculate_total_amount(self, blockchain_address):
         total_amount = 0.0
@@ -213,7 +209,6 @@ class BlockChain(object):
             current_index += 1
         return True
 
-
     def resolve_conflicts(self):
         longest_chain = None
         max_length = len(self.chain)
@@ -226,7 +221,7 @@ class BlockChain(object):
                 if chain_length > max_length and self.valid_chain(chain):
                     max_length = chain_length
                     longest_chain = chain
-                    
+
         if longest_chain:
             self.chain = longest_chain
             logger.info({'action': 'resolve_conflicts', 'status': 'replaced'})
@@ -234,5 +229,4 @@ class BlockChain(object):
 
         logger.info({'action': 'resolve_conflicts', 'status': 'not_replaced'})
         return False
-        
-        
+
