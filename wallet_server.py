@@ -35,9 +35,9 @@ def create_transaction():
         'sender_blockchain_address',
         'recipient_blockchain_address',
         'sender_public_key',
-        'value')  
+        'value')
     if not all(k in request_json for k in required):
-        return 'missing values', 400 
+        return 'missing values', 400
 
     sender_private_key = request_json['sender_private_key']
     sender_blockchain_address = request_json['sender_blockchain_address']
@@ -67,6 +67,23 @@ def create_transaction():
     if response.status_code == 201:
         return jsonify({'message': 'success'}), 201
     return jsonify({'message': 'fail', 'response': response}), 400
+
+
+@app.route('/wallet/amount', methods=['GET'])
+def calculate_amount():
+    required = ['blockchain_address']
+    if not all(k in request.args for k in required):
+        return 'Missing values', 400
+
+    my_blockchain_address = request.args.get('blockchain_address')
+    response = requests.get(
+        urllib.parse.urljoin(app.config['gw'], 'amount'),
+        {'blockchain_address': my_blockchain_address},
+        timeout=3)
+    if response.status_code == 200:
+        total = response.json()['amount']
+        return jsonify({'message': 'success', 'amount': total}), 200
+    return jsonify({'message': 'fail', 'error': response.content}), 400
 
 
 if __name__ == '__main__':
