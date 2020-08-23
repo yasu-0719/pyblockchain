@@ -85,8 +85,8 @@ def transaction():
         )
         if not is_updated:
             return jsonify({'message': 'fail'}), 400
-        return jsonify({'message': 'success'}), 201
-    
+        return jsonify({'message': 'success'}), 200
+
     if request.method == 'DELETE':
         block_chain.transaction_pool = []
         return jsonify({'message': 'success'}), 200
@@ -113,6 +113,13 @@ def consensus():
     replaced = block_chain.resolve_conflicts()
     return jsonify({'replaced': replaced}), 200
 
+
+@app.route('/amount', methods=['GET'])
+def get_total_amount():
+    blockchain_address= request.args['blockchain_address']
+    return jsonify({
+        'amount': get_blockchain().calculate_total_amount(blockchain_address)
+    }), 200
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
